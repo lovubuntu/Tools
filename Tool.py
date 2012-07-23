@@ -6,6 +6,7 @@ SINGLE_COMMENT  = '--'
 UNDO            = '--//@UNDO'
 REPORT_FILE     = 'Report.csv'
 DEV_ONLY        = 'devonly'
+SQL             = '.sql'
 
 class FileSelect(object):
     def __init__(self):
@@ -19,14 +20,12 @@ class FileSelect(object):
         return filename
     
     def get_all_files(self,path):
-        all_files = os.listdir(path)
-        for file_name in all_files:
-            if file_name == REPORT_FILE:
-                continue 
-            abs_path = os.path.join(path,file_name)
-            target_file = open(abs_path)
-            file_name = self.get_filename(file_name) 
-            yield target_file,file_name
+        for root,_,files in os.walk(path):
+            for file_name in [ f for f in files if f.endswith(SQL)]:
+                abs_path = os.path.join(root,file_name)
+                target_file = open(abs_path)
+                file_name = self.get_filename(file_name) 
+                yield target_file,file_name
             
 class UnitTest(object):
     def __init__(self):
@@ -207,7 +206,6 @@ class Main(object):
             
     def get_user_input(self):
         self.path = raw_input('Enter the file path > ')
-        
     def start(self):  
         self.get_user_input()
         Files_in_dest = FileSelect()
@@ -224,7 +222,5 @@ class Main(object):
         report.close_file()
         print 'Report Generated successfully'
 
-unit_test = UnitTest()
-unit_test.all_tests()
 QueryExistenceChecker = Main()
 QueryExistenceChecker.start()

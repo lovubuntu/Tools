@@ -6,6 +6,7 @@ SINGLE_COMMENT  = '--'
 UNDO            = '--//@UNDO'
 REPORT_FILE     = 'Report.csv'
 DEV_ONLY        = 'devonly'
+SQL             = '.sql'
 
 class FileSelect(object):
     def __init__(self):
@@ -16,16 +17,8 @@ class FileSelect(object):
     def get_filename(self,filename):
         if filename.find('.') != -1:
             return filename[:filename.find('.')]
-        return filename
-            
-    def get_all_subdirectory_files(self,path):
-        for root,_,files in os.walk(path):
-            for file_name in [ f for f in files if f.endswith(SQL)]:
-                abs_path = os.path.join(root,file_name)
-                target_file = open(abs_path)
-                file_name = self.get_filename(file_name) 
-                yield target_file,file_name
-    
+        return filename      
+        
     def get_all_files(self,path):
         all_files = os.listdir(path)
         for file_name in all_files:
@@ -35,108 +28,15 @@ class FileSelect(object):
             target_file = open(abs_path)
             file_name = self.get_filename(file_name) 
             yield target_file,file_name
-            
-class UnitTest(object):
-    def __init__(self):
-        self.open_all_files()
-        
-    def open_all_files(self):
-        self.empty_file = open('D:\\TW\\Steps\\001 TFFemptyfile.sql')
-        self.with_query = open('D:\\TW\\Steps\\001 FFTCheck.sql')
-        self.with_undo =  open('D:\\TW\\Steps\\001 FTTCheck.sql')
-        self.all_commented_no_undo = open('D:\\TW\\Steps\\001 FTFCheck.sql')
-        self.with_query_no_undo = open('D:\\TW\\Steps\\001 FFFCheck.sql')
-        
-    def close_all_files(self):
-        self.empty_file.close()
-        self.with_query.close()
-        self.with_undo.close()
-        self.all_commented_no_undo.close()
-        self.with_query_no_undo.close()
-        
-    def files_to_intial_pos(self):
-        self.empty_file.seek(0)
-        self.with_query.seek(0)
-        self.with_undo.seek(0)
-        self.all_commented_no_undo.seek(0)
-        self.with_query_no_undo.seek(0)
-        
-    def test_file_select(self):
-        tool_test = FileSelect()
-        assert(tool_test.get_filename('filename.txt')) == 'filename'
-        assert(tool_test.get_filename('filename')) == 'filename'
-
-        file_in_all_subdirectory_list = ['001 FFTCheck',
-                                         '001 FTFCheck',
-                                         '001 FTTCheck',
-                                         '001 TFFemptyfile',
-                                         '001 FFFCheck',
-                                         '002 FFFCheck',
-                                         '002 FTTCheck',
-                                         '002 TFFemptyfile',
-                                         '003 FFTCheck',
-                                         '003 FTFCheck',
-                                         '004 FTFdevonly']
-        count = 0
-        for file_name in tool_test.get_all_subdirectory_files('D:\\TW\\Steps'):
-            assert(file_name[1]) == file_in_all_subdirectory_list[count]
-            count += 1
-        print 'All FileSelect test cases passed'
-        
-    def test_filereader(self):
-        test_filereader = FileReader()
-        assert(test_filereader.check_empty(self.empty_file))==True
-        assert(test_filereader.check_empty(self.with_query))==False
-        self.empty_file.seek(0)
-        self.with_query.seek(0)
-        assert(test_filereader.process_file(self.empty_file))==(True,False,False)
-        assert(test_filereader.process_file(self.with_query))==(False,False,True)
-        assert(test_filereader.process_file(self.with_undo))==(False,True,True)
-        assert(test_filereader.process_file(self.all_commented_no_undo))==(False,True,False)
-        assert(test_filereader.process_file(self.with_query_no_undo))==(False,False,False)
-        
-        self.close_all_files()
-        print 'All Filereader test cases passed'
-
-    def test_Content(self):
-        self.close_all_files()
-        self.open_all_files()
-        test_content = Content()
-        #Check if all the code are commented
-        assert(test_content.all_commented(self.empty_file))== True
-        assert(test_content.all_commented(self.with_query))== False
-        assert(test_content.all_commented(self.with_undo))== True
-        assert(test_content.all_commented(self.all_commented_no_undo))== True
-        assert(test_content.all_commented(self.with_query_no_undo))== False
-        
-        #check if there is an end comment in the file
-        self.files_to_intial_pos()
-        assert(test_content.check_undo(self.empty_file)) == False
-        assert(test_content.check_undo(self.with_query))==True
-        assert(test_content.check_undo(self.with_undo))==True
-        assert(test_content.check_undo(self.all_commented_no_undo))==False
-        assert(test_content.check_undo(self.with_query_no_undo))==False
-        self.close_all_files()        
-        print 'Content Tested Successfully'
-        
-    def test_FileSplit(self):
-        test_filesplit = FileSplit()
-        filename = '001 FFTCheck'
-        devonly_file = '001 FFTDevOnlyCheck'
-        assert(test_filesplit.get_change_num_filename_devonly(filename)) == ('001','FFTCheck',False)
-        assert(test_filesplit.get_change_num_filename_devonly(devonly_file)) == ('001','FFTDevOnlyCheck',True)
-        
-        assert(test_filesplit.check_dev_only(filename)) == False
-        assert(test_filesplit.check_dev_only(devonly_file)) == True
-        
-        print 'FileSplit Tested Successfully'
-
-    def all_tests(self):
-        self.test_file_select()
-        self.test_filereader()
-        self.test_Content()
-        self.test_FileSplit()
-        
+    
+    def get_all_subdirectory_files(self,path):
+        for root,_,files in os.walk(path):
+            for file_name in [ f for f in files if f.endswith(SQL)]:
+                abs_path = os.path.join(root,file_name)
+                target_file = open(abs_path)
+                file_name = self.get_filename(file_name)
+                yield target_file,file_name
+                
 class FileReader(object):
     def check_empty(self,target_file):                
         for line in target_file:
@@ -231,7 +131,6 @@ class Main(object):
             
     def get_user_input(self):
         self.path = raw_input('Enter the file path > ')
-        
     def start(self):  
         self.get_user_input()
         Files_in_dest = FileSelect()
@@ -248,7 +147,29 @@ class Main(object):
         report.close_file()
         print 'Report Generated successfully'
 
+class UnitTest(object):        
+    def test_file_select(self):
+        file_in_all_subdirectory_list = ['001 FFTCheck',
+                                         '001 FTFCheck',
+                                         '001 FTTCheck',
+                                         '001 TFFemptyfile',
+                                         '001 FFFCheck',
+                                         '002 FFFCheck',
+                                         '002 FTTCheck',
+                                         '002 TFFemptyfile',
+                                         '003 FFTCheck',
+                                         '003 FTFCheck',
+                                         '004 FTFdevonly']
+        count = 0
+        tool_test = FileSelect()
+        assert(tool_test.get_filename('filename.txt')) == 'filename'
+        assert(tool_test.get_filename('filename')) == 'filename'
+        for file_name in tool_test.get_all_subdirectory_files('/media/No More #$%^/TW/Steps/'):
+            assert(file_name[1]) == file_in_all_subdirectory_list[count]
+            count += 1
+        print 'All FileSelect test cases passed'
+
 unit_test = UnitTest()
-unit_test.all_tests()
+unit_test.test_file_select()
 QueryExistenceChecker = Main()
 QueryExistenceChecker.start()

@@ -17,14 +17,24 @@ class FileSelect(object):
     def get_filename(self,filename):
         if filename.find('.') != -1:
             return filename[:filename.find('.')]
-        return filename
-    
+        return filename      
+        
     def get_all_files(self,path):
+        all_files = os.listdir(path)
+        for file_name in all_files:
+            if file_name == REPORT_FILE:
+                continue 
+            abs_path = os.path.join(path,file_name)
+            target_file = open(abs_path)
+            file_name = self.get_filename(file_name) 
+            yield target_file,file_name
+    
+    def get_all_subdirectory_files(self,path):
         for root,_,files in os.walk(path):
             for file_name in [ f for f in files if f.endswith(SQL)]:
                 abs_path = os.path.join(root,file_name)
                 target_file = open(abs_path)
-                file_name = self.get_filename(file_name) 
+                file_name = self.get_filename(file_name)
                 yield target_file,file_name
                 
 class FileReader(object):
@@ -128,7 +138,7 @@ class Main(object):
         split = FileSplit() 
         report = ReportFile(self.path)
         report.create_header()
-        for target_file,file_name in Files_in_dest.get_all_files(self.path):
+        for target_file,file_name in Files_in_dest.get_all_subdirectory_files(self.path):
             change_num,filename,dev_only = split.get_change_num_filename_devonly(file_name)
             file_empty,file_commented_out,has_undo =Text.process_file(target_file)
             #Write to Output to Report File
@@ -137,5 +147,30 @@ class Main(object):
         report.close_file()
         print 'Report Generated successfully'
 
+class UnitTest(object):        
+    def test_file_select(self):
+        tool_test = FileSelect()
+        assert(tool_test.get_filename('filename.txt')) == 'filename'
+        assert(tool_test.get_filename('filename')) == 'filename'
+        
+        file_in_all_subdirectory_list = ['001 FFTCheck',
+                                         '001 FTFCheck',
+                                         '001 FTTCheck',
+                                         '001 TFFemptyfile',
+                                         '001 FFFCheck',
+                                         '002 FFFCheck',
+                                         '002 FTTCheck',
+                                         '002 TFFemptyfile',
+                                         '003 FFTCheck',
+                                         '003 FTFCheck',
+                                         '004 FTFdevonly']
+        count = 0
+        for file_name in tool_test.get_all_subdirectory_files('/media/No More #$%^/TW/Steps/'):
+            assert(file_name[1]) == file_in_all_subdirectory_list[count]
+            count += 1
+        print 'All FileSelect test cases passed'
+
+unit_test = UnitTest()
+unit_test.test_file_select()
 QueryExistenceChecker = Main()
 QueryExistenceChecker.start()
